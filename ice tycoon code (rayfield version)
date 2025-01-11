@@ -168,7 +168,7 @@ function AutoBuyChips()
         game:GetService("ReplicatedStorage").BuyChip:FireServer()
         if game:GetService("Players").LocalPlayer.Chips.Value == 3 then
             while game:GetService("Players").LocalPlayer.Chips.Value == 3 do
-                return end -- Pause the function while there are 6 data chips
+                task.wait() -- Pause the function while there are 6 data chips
         end
     end
 end
