@@ -36,31 +36,161 @@ local Window = Rayfield:CreateWindow({
 --Values
 _G.AutoTapTowerButton = true
 _G.AutoPrestige = true
+_G.BuyButtons = true
+_G.AutoBuyChips = true
+_G.WalkSpeed = true
 
 --Functions
 function AutoTapTowerButton()
-local freezing = workspace.Tycoons.Tycoon2.Bought:WaitForChild("Freezing")
-local towerdisplay = freezing:WaitForChild("TowerDisplay")
-local button = towerdisplay:WaitForChild("Button")
-local cd = button:WaitForChild("ClickDetector")
-    while _G.AutoTapTowerButton == true do
-     if towerdisplay:WaitForChild("Active").Value == false then
-        fireclickdetector(cd)
-    end
-        task.wait(0.1)
-    end
+
+    print("AutoTapTowerButton function started.")
+
+    spawn(function()
+        while _G.AutoTapTowerButton == true do
+            local freezing = workspace.Tycoons.Tycoon2.Bought:WaitForChild("Freezing")
+            local towerdisplay = freezing:WaitForChild("TowerDisplay")
+            local button = towerdisplay:WaitForChild("Button")
+            local cd = button:WaitForChild("ClickDetector")
+            local activeState = towerdisplay:WaitForChild("Active").Value
+            print("Active state: ", activeState)
+
+            if activeState == false then
+                print("Clicking button...")
+                fireclickdetector(cd)
+                task.wait(1)
+                activeState = towerdisplay:WaitForChild("Active").Value -- Re-check the state
+                if activeState == false then
+                    fireclickdetector(cd)
+                end
+            end
+            task.wait(0.1) -- Small delay to avoid excessive checks
+        end
+    end)
 end
 
+
 function AutoPrestige()
-local player = game.Players.LocalPlayer
-local buttonPath = player:WaitForChild("PlayerGui"):WaitForChild("GUI"):WaitForChild("PrestigeConfirm").Yes
     while _G.AutoPrestige == true do
-    task.wait(1)
+    local player = game.Players.LocalPlayer
+    local Ready = player:WaitForChild("Ready").Value
+    local buttonPath = player:WaitForChild("PlayerGui"):WaitForChild("GUI"):WaitForChild("PrestigeConfirm").Yes
         if buttonPath and buttonPath:IsA("TextButton") then
+            task.wait()
             firesignal(buttonPath.MouseButton1Click)
+            task.wait()
+        end
+        task.wait(1.5)
+        if Ready == true then
+        task.wait()
+        player.Character:WaitForChild("HumanoidRootPart").CFrame = CFrame.new(493.964447, 128.519585, 63.4681587, -8.10623169e-05, 8.10623169e-05, 1, -1, 8.10623169e-05, -8.10623169e-05, -8.10623169e-05, -1, 8.10623169e-05)
+        task.wait()
         end
     end
 end
+
+function BuyButtons()
+    while _G.BuyButtons == true do
+    task.wait()
+-- Define the folder
+    local folder = workspace:WaitForChild("Tycoons"):WaitForChild("Tycoon2"):WaitForChild("Buttons")
+
+-- Check if the folder exists
+    if folder then
+    -- Create a table to store the descendants
+    local descendantsTable = {}
+
+    -- Get all descendants of the folder
+    local descendants = folder:GetDescendants()
+
+    -- Iterate through each descendant
+    for _, descendant in ipairs(descendants) do
+        -- Check if the descendant is a Model
+        if descendant:IsA("Model") then
+            -- Get all parts within the model
+            local parts = descendant:GetChildren()
+
+            -- Iterate through each part
+            for _, part in ipairs(parts) do
+                -- Check if the part has a TouchInterest
+                if part:FindFirstChild("TouchInterest") then
+                    -- Add the part to the table
+                    table.insert(descendantsTable, part)
+                end
+            end
+        end
+    end
+
+    -- Function to fire TouchInterest
+    local function fireTouchInterest(part, transmitter, toggle)
+        firetouchinterest(part, transmitter, toggle)
+    end
+
+    -- Function to buy a button
+    local function buyButton(part, transmitter)
+        fireTouchInterest(part, transmitter, 0) -- 0 to start the touch
+        task.wait() -- Wait to prevent crashing
+        fireTouchInterest(part, transmitter, 1) -- 1 to end the touch
+        task.wait(1) -- Wait between each buy
+    end
+
+    -- Iterate through the table and buy buttons in order
+    for _, part in ipairs(descendantsTable) do
+        -- Assuming 'transmitter' is the player character's HumanoidRootPart
+        local transmitter = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if transmitter then
+            -- Check for dependent buttons and buy them first
+            local dependencies = part:FindFirstChild("Dependency")
+            if dependencies and dependencies:IsA("StringValue") then
+                local dependencyNames = dependencies.Value:split(",")
+                for _, dependencyName in ipairs(dependencyNames) do
+                    local dependency = folder:FindFirstChild(dependencyName)
+                    if dependency and dependency:IsA("Model") then
+                        local dependencyPart = dependency:FindFirstChild("Touch")
+                        if dependencyPart and dependencyPart:FindFirstChild("TouchInterest") then
+                            buyButton(dependencyPart, transmitter)
+                        end
+                    end
+                end
+            end
+            -- Buy the current button
+            buyButton(part, transmitter)
+        end
+    end
+else
+    print("Folder 'Buttons' not found in Workspace.")
+        end
+    end
+end
+
+function AutoBuyChips()
+    while _G.AutoBuyChips == true do
+        task.wait(1)
+        game:GetService("ReplicatedStorage").BuyChip:FireServer()
+        if game:GetService("Players").LocalPlayer.Chips.Value == 3 then
+            while game:GetService("Players").LocalPlayer.Chips.Value == 3 do
+                return end -- Pause the function while there are 6 data chips
+        end
+    end
+end
+
+function WalkSpeed()
+    while _G.WalkSpeed == true do
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = 25
+        else
+            humanoid.WalkSpeed = 16
+        end
+        task.wait() -- Add a wait to prevent crashing
+    end
+end
+
+
+
+
+
 
 --Tabs
 local MainTab = Window:CreateTab("Main", 4483362458) -- Title, Image
@@ -79,12 +209,42 @@ local Toggle = MainTab:CreateToggle({
    end,
 })
 
-local Toggle = MainTab:CreateToggle({
+local Toggle2 = MainTab:CreateToggle({
    Name = "Auto Prestige",
    CurrentValue = false,
    Flag = "Toggle2", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
    Callback = function(Value)
 		_G.AutoPrestige = Value
         AutoPrestige()
+   end,
+})
+
+local Toggle3 = MainTab:CreateToggle({
+   Name = "Auto Buy Buttons",
+   CurrentValue = false,
+   Flag = "Toggle3", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+		_G.BuyButtons = Value
+        BuyButtons()
+   end,
+})
+
+local Toggle4 = MainTab:CreateToggle({
+   Name = "Auto Buy Data-Chips",
+   CurrentValue = false,
+   Flag = "Toggle4", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+		_G.AutoBuyChips = Value
+        AutoBuyChips()
+   end,
+})
+
+local Toggle5 = MainTab:CreateToggle({
+   Name = "WalkSpeed",
+   CurrentValue = false,
+   Flag = "Toggle5", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+		_G.WalkSpeed = Value
+        WalkSpeed()
    end,
 })
