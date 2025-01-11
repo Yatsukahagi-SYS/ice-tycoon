@@ -59,6 +59,7 @@ function AutoTapTowerButton()
                 fireclickdetector(cd)
                 task.wait(1)
                 activeState = towerdisplay:WaitForChild("Active").Value -- Re-check the state
+		task.wait(1)
                 if activeState == false then
                     fireclickdetector(cd)
                 end
